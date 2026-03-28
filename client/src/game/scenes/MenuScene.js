@@ -5,6 +5,10 @@ export class MenuScene extends Phaser.Scene {
     super('MenuScene');
   }
 
+  preload() {
+    this.load.spine('person_SPO', '../../assets/anim/person.json', '../../assets/anim/person.atlas');
+  }
+
   create() {
     const { width, height } = this.scale;
 

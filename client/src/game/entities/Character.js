@@ -1,21 +1,21 @@
 const Phaser = window.Phaser;
 
-export class Character extends Phaser.Physics.Arcade.Sprite {
+export class Character extends Phaser.GameObjects.Container {
   constructor(scene, x, y) {
-    Character.ensureTexture(scene);
-
-    super(scene, x, y, Character.TEXTURE_KEY);
+    super(scene, x, y);
 
     scene.add.existing(this);
-    scene.physics.add.existing(this);
 
-    this.setOrigin(0.5, 1);
-    this.setCollideWorldBounds(true);
-    this.setBounce(0, 0);
-    this.setDragX(1600);
-    this.setMaxVelocity(420, 1200);
-    this.setSize(42, 88);
-    this.setOffset(11, 8);
+    this.hitbox = scene.add.rectangle(x, y - 44, 80, 130, 0x38bdf8, 0.18).setStrokeStyle(2, 0x7dd3fc, 0.9);
+
+    scene.physics.add.existing(this.hitbox);
+
+    this.hitbox.body.setCollideWorldBounds(true);
+    this.hitbox.body.setBounce(0, 0);
+    this.hitbox.body.setDragX(1600);
+    this.hitbox.body.setMaxVelocity(420, 1200);
+    this.hitbox.body.setSize(42, 130);
+    this.hitbox.body.setOffset(-21, 0);
 
     this.moveSpeed = 400;
     this.jumpSpeed = 800;
@@ -28,56 +28,70 @@ export class Character extends Phaser.Physics.Arcade.Sprite {
       right: Phaser.Input.Keyboard.KeyCodes.D,
       space: Phaser.Input.Keyboard.KeyCodes.SPACE
     });
-  }
 
-  static ensureTexture(scene) {
-    if (scene.textures.exists(Character.TEXTURE_KEY)) {
-      return;
-    }
-
-    const graphics = scene.make.graphics({ x: 0, y: 0, add: false });
-
-    graphics.fillStyle(0xff8a65, 1);
-    graphics.fillRoundedRect(10, 8, 44, 76, 16);
-
-    graphics.fillStyle(0xffcc80, 1);
-    graphics.fillCircle(32, 20, 12);
-
-    graphics.fillStyle(0x263238, 0.9);
-    graphics.fillRect(18, 36, 8, 22);
-    graphics.fillRect(38, 36, 8, 22);
-    graphics.fillRect(20, 84, 8, 18);
-    graphics.fillRect(36, 84, 8, 18);
-
-    graphics.generateTexture(Character.TEXTURE_KEY, 64, 110);
-    graphics.destroy();
+    this.add(this.anim = scene.add.spine(0, 0, 'person_SPO', 'idle', true));
+    this.anim.setScale(0.15);
+    this.anim.setMix('run', 'idle', 0.25);
+    this.currentAnimation = 'idle';
   }
 
   update() {
     const leftPressed = this.cursors.left.isDown;
     const rightPressed = this.cursors.right.isDown;
     const jumpPressed = Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.cursors.space);
-    const isGrounded = this.body.blocked.down || this.body.touching.down;
+    const isGrounded = this.hitbox.body.blocked.down || this.hitbox.body.touching.down;
+    const isMovingHorizontally = Math.abs(this.hitbox.body.velocity.x) > 5;
 
     if (isGrounded) {
       this.jumpCount = 0;
     }
 
     if (leftPressed && !rightPressed) {
-      this.setVelocityX(-this.moveSpeed);
-      this.setFlipX(true);
+      this.hitbox.body.setVelocityX(-this.moveSpeed);
+      this.anim.scaleX = -Math.abs(this.anim.scaleX);
     } else if (rightPressed && !leftPressed) {
-      this.setVelocityX(this.moveSpeed);
-      this.setFlipX(false);
+      this.hitbox.body.setVelocityX(this.moveSpeed);
+      this.anim.scaleX = Math.abs(this.anim.scaleX);
     } else {
-      this.setVelocityX(0);
+      this.hitbox.body.setVelocityX(0);
     }
 
     if (jumpPressed && this.jumpCount < this.maxJumps) {
-      this.setVelocityY(-this.jumpSpeed);
+      this.hitbox.body.setVelocityY(-this.jumpSpeed);
       this.jumpCount += 1;
     }
+
+    if (!isGrounded) {
+      this.setAnimation(isMovingHorizontally ? 'run' : 'idle', true);
+    } else {
+      this.setAnimation((leftPressed || rightPressed) ? 'run' : 'idle', true);
+    }
+
+    this.setPosition(
+      Math.round(this.hitbox.x),
+      Math.round(this.hitbox.y + this.hitbox.height * 0.5)
+    );
+  }
+
+  getPhysicsTarget() {
+    return this.hitbox;
+  }
+
+  setAnimation(name, loop) {
+    if (this.currentAnimation === name) {
+      return;
+    }
+
+    this.currentAnimation = name;
+    this.anim.play(name, loop);
+  }
+
+  destroy(fromScene) {
+    if (this.hitbox) {
+      this.hitbox.destroy();
+      this.hitbox = null;
+    }
+
+    super.destroy(fromScene);
   }
 }
-
-Character.TEXTURE_KEY = 'character-prototype';
