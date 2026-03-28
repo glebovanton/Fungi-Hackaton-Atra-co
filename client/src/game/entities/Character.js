@@ -31,6 +31,7 @@ export class Character extends Phaser.GameObjects.Container {
     this.attackHeight = 80;
     this.lastAttackAt = -this.attackCooldownMs;
     this.attackUntil = 0;
+    this.attackId = 0;
     this.facingDirection = 1;
     this.currentAnimation = 'idle';
     this.lastDownTapAt = 0;
@@ -96,19 +97,20 @@ export class Character extends Phaser.GameObjects.Container {
     }
 
     if (attackPressed) {
-      this.tryAttack(now);
-      this.anim.off('complete');
-
-      this.anim.play('hit_low');
-
-      this.anim.on('complete', () => {
+      if (this.tryAttack(now)) {
         this.anim.off('complete');
-        this.anim.play('idle', true);
-      });
+        this.anim.play('hit_low');
+        this.anim.on('complete', () => {
+          this.anim.off('complete');
+          this.anim.play('idle', true);
+        });
+      }
     }
 
     this.syncAttackHitbox();
-    this.setAnimation(movingHorizontally ? 'run' : 'idle', true);
+    if (!this.isAttacking()) {
+      this.setAnimation(movingHorizontally ? 'run' : 'idle', true);
+    }
     this.setPosition(Math.round(this.hitbox.x), Math.round(this.hitbox.y + this.hitbox.height * 0.5));
   }
 
@@ -157,6 +159,7 @@ export class Character extends Phaser.GameObjects.Container {
 
     this.lastAttackAt = now;
     this.attackUntil = now + this.attackDurationMs;
+    this.attackId += 1;
     this.syncAttackHitbox();
     return true;
   }
@@ -173,12 +176,20 @@ export class Character extends Phaser.GameObjects.Container {
     return this.attackHitbox;
   }
 
+  getAttackId() {
+    return this.attackId;
+  }
+
   getHp() {
     return this.hp;
   }
 
   getMaxHp() {
     return this.maxHp;
+  }
+
+  isDead() {
+    return this.hp <= 0;
   }
 
   takeDamage(amount) {

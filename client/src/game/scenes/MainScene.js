@@ -1,4 +1,5 @@
 import { Character } from '../entities/Character.js';
+import { Enemy } from '../entities/Enemy.js';
 import { Platform } from '../entities/Platform.js';
 import {unit_manager} from "../unit_manager";
 
@@ -11,6 +12,8 @@ export class MainScene extends Phaser.Scene {
   }
 
   create() {
+    this.isReturningToMenu = false;
+
     const viewWidth = this.scale.width;
     const viewHeight = this.scale.height;
     const worldWidth = viewWidth * WORLD_SCALE;
@@ -25,6 +28,7 @@ export class MainScene extends Phaser.Scene {
     this.drawMap(worldWidth, worldHeight);
     this.createCollisionMap(worldWidth, worldHeight);
     this.createCharacter();
+    this.createEnemies();
     this.createHud(viewWidth);
 
     this.add.text(viewWidth * 0.5, 90, 'Main Game Scene', {
@@ -64,6 +68,9 @@ export class MainScene extends Phaser.Scene {
     if (this.character) {
       this.character.update();
     }
+
+    this.handleCharacterDeath();
+    this.updateEnemies();
     this.updateHud();
     this.updateSocketInfo();
   }
@@ -205,6 +212,74 @@ export class MainScene extends Phaser.Scene {
       undefined,
       (_characterBody, platform) => this.character.shouldCollideWithPlatform(platform)
     );
+  }
+
+  createEnemies() {
+    this.enemies = [
+      new Enemy(this, 360 * WORLD_SCALE, 650 * WORLD_SCALE),
+      new Enemy(this, 1120 * WORLD_SCALE, 580 * WORLD_SCALE),
+      new Enemy(this, 1540 * WORLD_SCALE, 250 * WORLD_SCALE)
+    ];
+
+    this.enemies.forEach((enemy) => {
+      enemy.setDepth(2);
+      this.physics.add.collider(
+        enemy.getPhysicsTarget(),
+        this.platforms
+      );
+    });
+  }
+
+  updateEnemies() {
+    if (!this.enemies?.length || !this.character) {
+      return;
+    }
+
+    const attackId = this.character.getAttackId();
+    const isPlayerAttacking = this.character.isAttacking();
+    const playerAttackBounds = isPlayerAttacking ? this.character.getAttackHitbox().getBounds() : null;
+
+    this.enemies.forEach((enemy) => {
+      enemy.update(this.character);
+
+      if (enemy.isDead()) {
+        return;
+      }
+
+      if (!isPlayerAttacking || attackId === 0) {
+        return;
+      }
+
+      if (
+        Phaser.Geom.Intersects.RectangleToRectangle(
+          playerAttackBounds,
+          enemy.getPhysicsTarget().getBounds()
+        )
+      ) {
+        enemy.takeDamage(this.character.getAttackDamage(), attackId);
+      }
+    });
+
+    this.enemies = this.enemies.filter((enemy) => {
+      if (!enemy.isDead()) {
+        return true;
+      }
+
+      enemy.destroy();
+      return false;
+    });
+  }
+
+  handleCharacterDeath() {
+    if (!this.character || this.isReturningToMenu || !this.character.isDead()) {
+      return;
+    }
+
+    this.isReturningToMenu = true;
+    this.cameras.main.stopFollow();
+    this.character.destroy();
+    this.character = null;
+    this.scene.start('MenuScene');
   }
 
   createHud(viewWidth) {
