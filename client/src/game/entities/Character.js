@@ -21,6 +21,17 @@ export class Character extends Phaser.GameObjects.Container {
     this.jumpSpeed = 800;
     this.maxJumps = 2;
     this.jumpCount = 0;
+    this.maxHp = 100;
+    this.hp = 100;
+    this.baseDamage = 10;
+    this.attackCooldownMs = 250;
+    this.attackDurationMs = 120;
+    this.attackRange = 110;
+    this.attackWidth = 90;
+    this.attackHeight = 80;
+    this.lastAttackAt = -this.attackCooldownMs;
+    this.attackUntil = 0;
+    this.facingDirection = 1;
     this.currentAnimation = 'idle';
     this.lastDownTapAt = 0;
     this.dropThroughUntil = 0;
@@ -31,12 +42,17 @@ export class Character extends Phaser.GameObjects.Container {
       left: Phaser.Input.Keyboard.KeyCodes.A,
       down: Phaser.Input.Keyboard.KeyCodes.S,
       right: Phaser.Input.Keyboard.KeyCodes.D,
-      space: Phaser.Input.Keyboard.KeyCodes.SPACE
+      space: Phaser.Input.Keyboard.KeyCodes.SPACE,
+      enter: Phaser.Input.Keyboard.KeyCodes.ENTER
     });
 
     this.add(this.anim = scene.add.spine(0, 0, 'person_SPO', 'idle', true));
     this.anim.setScale(0.15);
     this.anim.setMix('run', 'idle', 0.25);
+
+    this.attackHitbox = scene.add.rectangle(x, y, this.attackWidth, this.attackHeight, 0xf97316, 0.2)
+      .setStrokeStyle(2, 0xfb923c, 0.95)
+      .setVisible(false);
   }
 
   update() {
@@ -44,6 +60,7 @@ export class Character extends Phaser.GameObjects.Container {
     const leftPressed = this.cursors.left.isDown;
     const rightPressed = this.cursors.right.isDown;
     const jumpPressed = Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.cursors.space);
+    const attackPressed = Phaser.Input.Keyboard.JustDown(this.cursors.enter);
     const downPressed = Phaser.Input.Keyboard.JustDown(this.cursors.down);
     const isGrounded = this.hitbox.body.blocked.down || this.hitbox.body.touching.down;
     const movingHorizontally = leftPressed !== rightPressed;
@@ -63,9 +80,11 @@ export class Character extends Phaser.GameObjects.Container {
 
     if (leftPressed && !rightPressed) {
       this.hitbox.body.setVelocityX(-this.moveSpeed);
+      this.facingDirection = -1;
       this.anim.scaleX = -Math.abs(this.anim.scaleX);
     } else if (rightPressed && !leftPressed) {
       this.hitbox.body.setVelocityX(this.moveSpeed);
+      this.facingDirection = 1;
       this.anim.scaleX = Math.abs(this.anim.scaleX);
     } else {
       this.hitbox.body.setVelocityX(0);
@@ -76,8 +95,20 @@ export class Character extends Phaser.GameObjects.Container {
       this.jumpCount += 1;
     }
 
-    this.setAnimation(movingHorizontally ? 'run' : 'idle', true);
+    if (attackPressed) {
+      this.tryAttack(now);
+      this.anim.off('complete');
 
+      this.anim.play('hit_low');
+
+      this.anim.on('complete', () => {
+        this.anim.off('complete');
+        this.anim.play('idle', true);
+      });
+    }
+
+    this.syncAttackHitbox();
+    this.setAnimation(movingHorizontally ? 'run' : 'idle', true);
     this.setPosition(Math.round(this.hitbox.x), Math.round(this.hitbox.y + this.hitbox.height * 0.5));
   }
 
@@ -108,6 +139,58 @@ export class Character extends Phaser.GameObjects.Container {
     });
   }
 
+  syncAttackHitbox() {
+    const isActive = this.isAttacking();
+    const directionOffset = (this.hitbox.width * 0.5 + this.attackWidth * 0.5) * this.facingDirection;
+
+    this.attackHitbox.setPosition(
+      Math.round(this.hitbox.x + directionOffset),
+      Math.round(this.hitbox.y - 8)
+    );
+    this.attackHitbox.setVisible(isActive);
+  }
+
+  tryAttack(now = this.scene.time.now) {
+    if (now - this.lastAttackAt < this.attackCooldownMs) {
+      return false;
+    }
+
+    this.lastAttackAt = now;
+    this.attackUntil = now + this.attackDurationMs;
+    this.syncAttackHitbox();
+    return true;
+  }
+
+  isAttacking() {
+    return this.scene.time.now < this.attackUntil;
+  }
+
+  getAttackDamage() {
+    return this.baseDamage;
+  }
+
+  getAttackHitbox() {
+    return this.attackHitbox;
+  }
+
+  getHp() {
+    return this.hp;
+  }
+
+  getMaxHp() {
+    return this.maxHp;
+  }
+
+  takeDamage(amount) {
+    this.hp = Math.max(0, this.hp - amount);
+    return this.hp;
+  }
+
+  heal(amount) {
+    this.hp = Math.min(this.maxHp, this.hp + amount);
+    return this.hp;
+  }
+
   shouldCollideWithPlatform(platform) {
     if (!platform.isDropThrough) {
       return true;
@@ -136,6 +219,11 @@ export class Character extends Phaser.GameObjects.Container {
   }
 
   destroy(fromScene) {
+    if (this.attackHitbox) {
+      this.attackHitbox.destroy();
+      this.attackHitbox = null;
+    }
+
     if (this.hitbox) {
       this.hitbox.destroy();
       this.hitbox = null;
