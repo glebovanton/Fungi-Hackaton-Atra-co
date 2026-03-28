@@ -9,7 +9,7 @@ bootGame('app');
 
 //* SOCKET *//
 
-const SOCKET_URL = import.meta.env.F_SOCKET_URL || window.location.origin;
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
 const socket = io(SOCKET_URL, {
     transports: ['websocket', 'polling']
 });
