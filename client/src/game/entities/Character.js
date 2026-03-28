@@ -32,7 +32,6 @@ export class Character extends Phaser.GameObjects.Container {
     this.add(this.anim = scene.add.spine(0, 0, 'person_SPO', 'idle', true));
     this.anim.setScale(0.15);
     this.anim.setMix('run', 'idle', 0.25);
-    this.currentAnimation = 'idle';
   }
 
   update() {
@@ -40,7 +39,6 @@ export class Character extends Phaser.GameObjects.Container {
     const rightPressed = this.cursors.right.isDown;
     const jumpPressed = Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.cursors.space);
     const isGrounded = this.hitbox.body.blocked.down || this.hitbox.body.touching.down;
-    const isMovingHorizontally = Math.abs(this.hitbox.body.velocity.x) > 5;
 
     if (isGrounded) {
       this.jumpCount = 0;
@@ -49,11 +47,14 @@ export class Character extends Phaser.GameObjects.Container {
     if (leftPressed && !rightPressed) {
       this.hitbox.body.setVelocityX(-this.moveSpeed);
       this.anim.scaleX = -Math.abs(this.anim.scaleX);
+      this.anim.play('run', true);
     } else if (rightPressed && !leftPressed) {
       this.hitbox.body.setVelocityX(this.moveSpeed);
       this.anim.scaleX = Math.abs(this.anim.scaleX);
+      this.anim.play('run', true);
     } else {
       this.hitbox.body.setVelocityX(0);
+      this.anim.play('idle', true);
     }
 
     if (jumpPressed && this.jumpCount < this.maxJumps) {
@@ -61,29 +62,11 @@ export class Character extends Phaser.GameObjects.Container {
       this.jumpCount += 1;
     }
 
-    if (!isGrounded) {
-      this.setAnimation(isMovingHorizontally ? 'run' : 'idle', true);
-    } else {
-      this.setAnimation((leftPressed || rightPressed) ? 'run' : 'idle', true);
-    }
-
-    this.setPosition(
-      Math.round(this.hitbox.x),
-      Math.round(this.hitbox.y + this.hitbox.height * 0.5)
-    );
+    this.setPosition(Math.round(this.hitbox.x), Math.round(this.hitbox.y + this.hitbox.height * 0.5));
   }
 
   getPhysicsTarget() {
     return this.hitbox;
-  }
-
-  setAnimation(name, loop) {
-    if (this.currentAnimation === name) {
-      return;
-    }
-
-    this.currentAnimation = name;
-    this.anim.play(name, loop);
   }
 
   destroy(fromScene) {

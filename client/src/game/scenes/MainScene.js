@@ -15,6 +15,7 @@ export class MainScene extends Phaser.Scene {
     const worldHeight = viewHeight * WORLD_SCALE;
 
     this.cameras.main.setBackgroundColor('#132238');
+    this.cameras.main.roundPixels = true;
     this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
     this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
 
@@ -52,7 +53,7 @@ export class MainScene extends Phaser.Scene {
       });
 
     backLabel.setDepth(1);
-    this.cameras.main.startFollow(this.character, true, 0.12, 0.12);
+    this.cameras.main.startFollow(this.character.getPhysicsTarget(), true, 0.12, 0.12);
     this.createDebugZoomControls(viewWidth);
   }
 
@@ -180,7 +181,7 @@ export class MainScene extends Phaser.Scene {
   createCharacter() {
     this.character = new Character(this, 220 * WORLD_SCALE, 650 * WORLD_SCALE);
     this.character.setDepth(2);
-    this.physics.add.collider(this.character, this.platforms);
+    this.physics.add.collider(this.character.getPhysicsTarget(), this.platforms);
   }
 
   createDebugZoomControls(viewWidth) {
