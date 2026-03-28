@@ -25,6 +25,7 @@ export class MainScene extends Phaser.Scene {
     this.drawMap(worldWidth, worldHeight);
     this.createCollisionMap(worldWidth, worldHeight);
     this.createCharacter();
+    this.createHud(viewWidth);
 
     this.add.text(viewWidth * 0.5, 90, 'Main Game Scene', {
       fontFamily: 'Arial',
@@ -62,7 +63,13 @@ export class MainScene extends Phaser.Scene {
   update() {
     if (this.character) {
       this.character.update();
+      const {x, y} = this.character;
+      unit_manager.info.players[unit_manager.my_id].x = x;
+      unit_manager.info.players[unit_manager.my_id].y = y;
+      unit_manager.socket.emit('playerMovement', {x, y});
+
     }
+    this.updateHud();
     this.updateSocketInfo();
   }
 
@@ -203,6 +210,45 @@ export class MainScene extends Phaser.Scene {
       undefined,
       (_characterBody, platform) => this.character.shouldCollideWithPlatform(platform)
     );
+  }
+
+  createHud(viewWidth) {
+    this.hpText = this.add.text(42, 34, '', {
+      fontFamily: 'Arial',
+      fontSize: '24px',
+      color: '#f8fafc'
+    }).setScrollFactor(0).setDepth(20);
+
+    this.attackText = this.add.text(42, 68, '', {
+      fontFamily: 'Arial',
+      fontSize: '20px',
+      color: '#fdba74'
+    }).setScrollFactor(0).setDepth(20);
+
+    this.controlsText = this.add.text(viewWidth - 42, 34, 'WASD move | Space jump | Enter attack', {
+      fontFamily: 'Arial',
+      fontSize: '18px',
+      color: '#cbd5e1',
+      align: 'right'
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(20);
+
+    this.updateHud();
+  }
+
+  updateHud() {
+    if (!this.character || !this.hpText || !this.attackText) {
+      return;
+    }
+
+    const cooldownLeft = Math.max(0, this.character.attackCooldownMs - (this.time.now - this.character.lastAttackAt));
+    const attackState = this.character.isAttacking()
+      ? 'ATTACK'
+      : cooldownLeft > 0
+        ? `CD ${Math.ceil(cooldownLeft)}ms`
+        : 'READY';
+
+    this.hpText.setText(`HP: ${this.character.getHp()} / ${this.character.getMaxHp()}`);
+    this.attackText.setText(`ATK: ${this.character.getAttackDamage()} | ${attackState}`);
   }
 
   createDebugZoomControls(viewWidth) {
