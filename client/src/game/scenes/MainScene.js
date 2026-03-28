@@ -87,7 +87,12 @@ export class MainScene extends Phaser.Scene {
     for (const [key, value] of Object.entries(players)) {
       if(value.id !== unit_manager.my_id) {
         if (!value.obj) value.obj = this.createEnemy();
-        value.obj.setPosition(value.x, value.y);
+        value.obj.applyRemoteState(value.x, value.y, this.time.now);
+
+        if (value.pendingAttackId && value.pendingAttackId !== value.lastPlayedAttackId) {
+          value.lastPlayedAttackId = value.pendingAttackId;
+          value.obj.playRemoteAttack(this.time.now);
+        }
       }
     }
   }
