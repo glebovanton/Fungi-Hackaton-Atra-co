@@ -31,19 +31,19 @@ export class MenuScene extends Phaser.Scene {
       color: '#cbd5e1'
     }).setOrigin(0.5);
 
-    this.createMenuButton(width * 0.5, 270, 360, 64, 'Start Game', 0x22c55e, () => {
+    this.createMenuButton(width * 0.5, 270 * 1.35, 360, 64, 'Start Game', 0x22c55e, () => {
       this.scene.start('MainScene');
     });
 
-    this.createMenuButton(width * 0.5, 360, 360, 64, 'Button 1', 0x334155, () => {
+    this.createMenuButton(width * 0.5, 360 * 1.35, 360, 64, 'Button 1', 0x334155, () => {
       statusText.setText('click button 1');
     });
 
-    this.createMenuButton(width * 0.5, 450, 360, 64, 'Button 2', 0x334155, () => {
+    this.createMenuButton(width * 0.5, 450 * 1.35, 360, 64, 'Button 2', 0x334155, () => {
       statusText.setText('click button 2');
     });
 
-    this.createMenuButton(width * 0.5, 540, 360, 64, 'Button 3', 0x334155, () => {
+    this.createMenuButton(width * 0.5, 540 * 1.35, 360, 64, 'Button 3', 0x334155, () => {
       statusText.setText('click button 3');
     });
   }

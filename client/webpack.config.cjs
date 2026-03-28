@@ -35,6 +35,10 @@ module.exports = (_, argv) => {
       new CopyWebpackPlugin({
         patterns: [
           {
+            from: path.resolve(__dirname, 'src/assets'),
+            to: 'assets'
+          },
+          {
             from: path.resolve(__dirname, '../libs/phaser.js'),
             to: 'libs/phaser.js'
           },

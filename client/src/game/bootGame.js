@@ -8,8 +8,8 @@ export function bootGame(parent) {
   return new Phaser.Game({
     type: Phaser.AUTO,
     parent,
-    width: 1280,
-    height: 720,
+    width: 1920,
+    height: 1080,
     backgroundColor: '#10151f',
     scale: {
       mode: Phaser.Scale.FIT,
