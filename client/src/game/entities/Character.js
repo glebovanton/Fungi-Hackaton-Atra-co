@@ -113,6 +113,13 @@ export class Character extends Phaser.GameObjects.Container {
     }
     this.setPosition(Math.round(this.hitbox.x), Math.round(this.hitbox.y + this.hitbox.height * 0.5));
   }
+  //
+  // isMoving() {
+  //   const leftPressed = this.cursors.left.isDown;
+  //   const rightPressed = this.cursors.right.isDown;
+  //   const isGrounded = this.hitbox.body.blocked.down || this.hitbox.body.touching.down;
+  //   return leftPressed && rightPressed || !isGrounded;
+  // }
 
   getPhysicsTarget() {
     return this.hitbox;
