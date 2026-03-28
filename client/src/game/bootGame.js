@@ -11,6 +11,13 @@ export function bootGame(parent) {
     width: 1920,
     height: 1080,
     backgroundColor: '#10151f',
+    physics: {
+      default: 'arcade',
+      arcade: {
+        gravity: { y: 1800 },
+        debug: false
+      }
+    },
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH
