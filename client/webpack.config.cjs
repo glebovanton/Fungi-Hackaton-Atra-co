@@ -53,6 +53,9 @@ module.exports = (_, argv) => {
       port: 5173,
       static: {
         directory: path.resolve(__dirname, 'dist')
+      },
+      devMiddleware: {
+        writeToDisk: true
       }
     }
   };
