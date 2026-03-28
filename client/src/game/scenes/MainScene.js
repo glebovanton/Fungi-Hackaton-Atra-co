@@ -1,4 +1,5 @@
 import { Character } from '../entities/Character.js';
+import { Platform } from '../entities/Platform.js';
 
 const Phaser = window.Phaser;
 const WORLD_SCALE = 2;
@@ -147,41 +148,42 @@ export class MainScene extends Phaser.Scene {
 
     this.platforms = this.physics.add.staticGroup();
 
-    this.addPlatformBody(width * 0.5, height - 85 * s, width, 170 * s);
-    this.addPlatformBody(315 * s, 729 * s, 330 * s, 58 * s);
-    this.addPlatformBody(540 * s, 634 * s, 220 * s, 48 * s);
-    this.addPlatformBody(785 * s, 557 * s, 210 * s, 44 * s);
-    this.addPlatformBody(1050 * s, 485 * s, 230 * s, 46 * s);
-    this.addPlatformBody(1325 * s, 414 * s, 210 * s, 44 * s);
-    this.addPlatformBody(1590 * s, 355 * s, 200 * s, 42 * s);
-    this.addPlatformBody(1810 * s, 290 * s, 170 * s, 40 * s);
-    this.addPlatformBody(1130 * s, 758 * s, 300 * s, 56 * s);
-    this.addPlatformBody(1450 * s, 643 * s, 220 * s, 46 * s);
-    this.addPlatformBody(1695 * s, 540 * s, 170 * s, 40 * s);
-    this.addPlatformBody(405 * s, 475 * s, 150 * s, 40 * s);
-    this.addPlatformBody(590 * s, 378 * s, 140 * s, 36 * s);
-    this.addPlatformBody(785 * s, 297 * s, 130 * s, 34 * s);
-    this.addPlatformBody(185 * s, 857 * s, 126 * s, 106 * s);
-    this.addPlatformBody(801 * s, 866 * s, 154 * s, 88 * s);
-    this.addPlatformBody(1534 * s, 844 * s, 188 * s, 132 * s);
-    this.addPlatformBody(1789 * s, 651 * s, 94 * s, 82 * s);
-    this.addPlatformBody(607 * s, 306 * s, 62 * s, 68 * s);
+    this.addPlatformBody(width * 0.5, height - 85 * s, width, 170 * s, { type: Platform.TYPES.SOLID });
+    this.addPlatformBody(315 * s, 729 * s, 330 * s, 58 * s, { type: Platform.TYPES.DROP_THROUGH });
+    this.addPlatformBody(540 * s, 634 * s, 220 * s, 48 * s, { type: Platform.TYPES.DROP_THROUGH });
+    this.addPlatformBody(785 * s, 557 * s, 210 * s, 44 * s, { type: Platform.TYPES.DROP_THROUGH });
+    this.addPlatformBody(1050 * s, 485 * s, 230 * s, 46 * s, { type: Platform.TYPES.DROP_THROUGH });
+    this.addPlatformBody(1325 * s, 414 * s, 210 * s, 44 * s, { type: Platform.TYPES.DROP_THROUGH });
+    this.addPlatformBody(1590 * s, 355 * s, 200 * s, 42 * s, { type: Platform.TYPES.DROP_THROUGH });
+    this.addPlatformBody(1810 * s, 290 * s, 170 * s, 40 * s, { type: Platform.TYPES.DROP_THROUGH });
+    this.addPlatformBody(1130 * s, 758 * s, 300 * s, 56 * s, { type: Platform.TYPES.DROP_THROUGH });
+    this.addPlatformBody(1450 * s, 643 * s, 220 * s, 46 * s, { type: Platform.TYPES.DROP_THROUGH });
+    this.addPlatformBody(1695 * s, 540 * s, 170 * s, 40 * s, { type: Platform.TYPES.DROP_THROUGH });
+    this.addPlatformBody(405 * s, 475 * s, 150 * s, 40 * s, { type: Platform.TYPES.DROP_THROUGH });
+    this.addPlatformBody(590 * s, 378 * s, 140 * s, 36 * s, { type: Platform.TYPES.DROP_THROUGH });
+    this.addPlatformBody(785 * s, 297 * s, 130 * s, 34 * s, { type: Platform.TYPES.DROP_THROUGH });
+    this.addPlatformBody(185 * s, 857 * s, 126 * s, 106 * s, { type: Platform.TYPES.SOLID });
+    this.addPlatformBody(801 * s, 866 * s, 154 * s, 88 * s, { type: Platform.TYPES.SOLID });
+    this.addPlatformBody(1534 * s, 844 * s, 188 * s, 132 * s, { type: Platform.TYPES.SOLID });
+    this.addPlatformBody(1789 * s, 651 * s, 94 * s, 82 * s, { type: Platform.TYPES.SOLID });
+    this.addPlatformBody(607 * s, 306 * s, 62 * s, 68 * s, { type: Platform.TYPES.SOLID });
   }
 
-  addPlatformBody(x, y, width, height) {
-    const platform = this.add.rectangle(x, y, width, height, 0x000000, 0);
-
-    this.physics.add.existing(platform, true);
-    platform.body.updateFromGameObject();
-    this.platforms.add(platform);
-
+  addPlatformBody(x, y, width, height, options = {}) {
+    const platform = new Platform(this, x, y, width, height, options);
+    this.platforms.add(platform.getPhysicsTarget());
     return platform;
   }
 
   createCharacter() {
     this.character = new Character(this, 220 * WORLD_SCALE, 650 * WORLD_SCALE);
     this.character.setDepth(2);
-    this.physics.add.collider(this.character.getPhysicsTarget(), this.platforms);
+    this.physics.add.collider(
+      this.character.getPhysicsTarget(),
+      this.platforms,
+      undefined,
+      (_characterBody, platform) => this.character.shouldCollideWithPlatform(platform)
+    );
   }
 
   createDebugZoomControls(viewWidth) {
