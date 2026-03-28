@@ -1,6 +1,7 @@
 import { Character } from '../entities/Character.js';
 
 const Phaser = window.Phaser;
+const WORLD_SCALE = 2;
 
 export class MainScene extends Phaser.Scene {
   constructor() {
@@ -8,35 +9,41 @@ export class MainScene extends Phaser.Scene {
   }
 
   create() {
-    const { width, height } = this.scale;
+    const viewWidth = this.scale.width;
+    const viewHeight = this.scale.height;
+    const worldWidth = viewWidth * WORLD_SCALE;
+    const worldHeight = viewHeight * WORLD_SCALE;
 
     this.cameras.main.setBackgroundColor('#132238');
-    this.physics.world.setBounds(0, 0, width, height);
+    this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+    this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
 
-    this.drawBackground(width, height);
-    this.drawMap(width, height);
-    this.createCollisionMap(width, height);
+    this.drawBackground(worldWidth, worldHeight);
+    this.drawMap(worldWidth, worldHeight);
+    this.createCollisionMap(worldWidth, worldHeight);
     this.createCharacter();
 
-    this.add.text(width * 0.5, 90, 'Main Game Scene', {
+    this.add.text(viewWidth * 0.5, 90, 'Main Game Scene', {
       fontFamily: 'Arial',
       fontSize: '42px',
       color: '#f8fafc'
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setScrollFactor(0);
 
-    this.add.text(width * 0.5, 138, 'Greybox map prototype', {
+    this.add.text(viewWidth * 0.5, 138, 'Greybox map prototype', {
       fontFamily: 'Arial',
       fontSize: '20px',
       color: '#cbd5e1'
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setScrollFactor(0);
 
-    const backButton = this.add.rectangle(width * 0.5, height - 90, 240, 58, 0xf59e0b, 1).setInteractive({ useHandCursor: true });
+    const backButton = this.add.rectangle(viewWidth * 0.5, viewHeight - 90, 240, 58, 0xf59e0b, 1)
+      .setInteractive({ useHandCursor: true })
+      .setScrollFactor(0);
 
-    const backLabel = this.add.text(width * 0.5, height - 90, 'Back To Menu', {
+    const backLabel = this.add.text(viewWidth * 0.5, viewHeight - 90, 'Back To Menu', {
       fontFamily: 'Arial',
       fontSize: '24px',
       color: '#111827'
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setScrollFactor(0);
 
     backButton.on('pointerover', () => backButton.setFillStyle(0xfbbf24, 1))
       .on('pointerout', () => backButton.setFillStyle(0xf59e0b, 1))
@@ -45,6 +52,8 @@ export class MainScene extends Phaser.Scene {
       });
 
     backLabel.setDepth(1);
+    this.cameras.main.startFollow(this.character, true, 0.12, 0.12);
+    this.createDebugZoomControls(viewWidth);
   }
 
   update() {
@@ -54,21 +63,23 @@ export class MainScene extends Phaser.Scene {
   }
 
   drawBackground(width, height) {
+    const s = WORLD_SCALE;
+
     this.add.rectangle(width * 0.5, height * 0.5, width, height, 0x132238, 1);
-    this.add.ellipse(260, 180, 260, 260, 0xf3d17a, 0.16);
-    this.add.ellipse(width - 220, 160, 320, 220, 0x8ec5ff, 0.09);
+    this.add.ellipse(260 * s, 180 * s, 260 * s, 260 * s, 0xf3d17a, 0.16);
+    this.add.ellipse(width - 220 * s, 160 * s, 320 * s, 220 * s, 0x8ec5ff, 0.09);
 
     const graphics = this.add.graphics();
 
     graphics.fillStyle(0x1a2d46, 1);
     graphics.beginPath();
     graphics.moveTo(0, height * 0.62);
-    graphics.lineTo(220, height * 0.48);
-    graphics.lineTo(520, height * 0.58);
-    graphics.lineTo(760, height * 0.43);
-    graphics.lineTo(1030, height * 0.56);
-    graphics.lineTo(1340, height * 0.39);
-    graphics.lineTo(1660, height * 0.53);
+    graphics.lineTo(220 * s, height * 0.48);
+    graphics.lineTo(520 * s, height * 0.58);
+    graphics.lineTo(760 * s, height * 0.43);
+    graphics.lineTo(1030 * s, height * 0.56);
+    graphics.lineTo(1340 * s, height * 0.39);
+    graphics.lineTo(1660 * s, height * 0.53);
     graphics.lineTo(width, height * 0.45);
     graphics.lineTo(width, height);
     graphics.lineTo(0, height);
@@ -78,11 +89,11 @@ export class MainScene extends Phaser.Scene {
     graphics.fillStyle(0x203753, 0.95);
     graphics.beginPath();
     graphics.moveTo(0, height * 0.72);
-    graphics.lineTo(340, height * 0.61);
-    graphics.lineTo(670, height * 0.68);
-    graphics.lineTo(990, height * 0.58);
-    graphics.lineTo(1320, height * 0.71);
-    graphics.lineTo(1650, height * 0.63);
+    graphics.lineTo(340 * s, height * 0.61);
+    graphics.lineTo(670 * s, height * 0.68);
+    graphics.lineTo(990 * s, height * 0.58);
+    graphics.lineTo(1320 * s, height * 0.71);
+    graphics.lineTo(1650 * s, height * 0.63);
     graphics.lineTo(width, height * 0.7);
     graphics.lineTo(width, height);
     graphics.lineTo(0, height);
@@ -91,86 +102,69 @@ export class MainScene extends Phaser.Scene {
   }
 
   drawMap(width, height) {
+    const s = WORLD_SCALE;
     const graphics = this.add.graphics();
 
     const soil = 0x59412f;
     const grass = 0x7cb342;
     const rock = 0x7f8c8d;
-    const wood = 0x6d4c41;
-    const accent = 0x9ccc65;
 
-    this.drawPlatform(graphics, 0, height - 170, width, 170, soil, grass);
-    this.drawPlatform(graphics, 150, 700, 330, 58, soil, grass);
-    this.drawPlatform(graphics, 540, 620, 250, 52, soil, grass);
-    this.drawPlatform(graphics, 860, 745, 380, 60, soil, grass);
-    this.drawPlatform(graphics, 1320, 630, 260, 52, soil, grass);
-    this.drawPlatform(graphics, 1600, 500, 180, 44, soil, grass);
+    this.drawPlatform(graphics, 0, height - 170 * s, width, 170 * s, soil, grass);
+    this.drawPlatform(graphics, 150 * s, 700 * s, 330 * s, 58 * s, soil, grass);
+    this.drawPlatform(graphics, 430 * s, 610 * s, 220 * s, 48 * s, soil, grass);
+    this.drawPlatform(graphics, 680 * s, 535 * s, 210 * s, 44 * s, soil, grass);
+    this.drawPlatform(graphics, 935 * s, 462 * s, 230 * s, 46 * s, soil, grass);
+    this.drawPlatform(graphics, 1220 * s, 392 * s, 210 * s, 44 * s, soil, grass);
+    this.drawPlatform(graphics, 1490 * s, 334 * s, 200 * s, 42 * s, soil, grass);
+    this.drawPlatform(graphics, 1725 * s, 270 * s, 170 * s, 40 * s, soil, grass);
+    this.drawPlatform(graphics, 980 * s, 730 * s, 300 * s, 56 * s, soil, grass);
+    this.drawPlatform(graphics, 1340 * s, 620 * s, 220 * s, 46 * s, soil, grass);
+    this.drawPlatform(graphics, 1610 * s, 520 * s, 170 * s, 40 * s, soil, grass);
+    this.drawPlatform(graphics, 330 * s, 455 * s, 150 * s, 40 * s, soil, grass);
+    this.drawPlatform(graphics, 520 * s, 360 * s, 140 * s, 36 * s, soil, grass);
+    this.drawPlatform(graphics, 720 * s, 280 * s, 130 * s, 34 * s, soil, grass);
 
     graphics.fillStyle(rock, 1);
-    graphics.fillRoundedRect(122, 804, 126, 106, 14);
-    graphics.fillRoundedRect(724, 822, 154, 88, 16);
-    graphics.fillRoundedRect(1500, 760, 188, 150, 18);
+    graphics.fillRoundedRect(122 * s, 804 * s, 126 * s, 106 * s, 14 * s);
+    graphics.fillRoundedRect(724 * s, 822 * s, 154 * s, 88 * s, 16 * s);
+    graphics.fillRoundedRect(1440 * s, 778 * s, 188 * s, 132 * s, 18 * s);
+    graphics.fillRoundedRect(1742 * s, 610 * s, 94 * s, 82 * s, 14 * s);
+    graphics.fillRoundedRect(576 * s, 272 * s, 62 * s, 68 * s, 12 * s);
 
-    graphics.fillStyle(wood, 1);
-    graphics.fillRect(260, 510, 32, 400);
-    graphics.fillRect(284, 480, 18, 430);
-    graphics.fillRect(1110, 450, 28, 460);
-    graphics.fillRect(1130, 420, 16, 490);
+    const playerSpawn = this.add.circle(220 * s, 650 * s, 22 * s, 0xff7043, 0.4)
+      .setStrokeStyle(5 * s, 0xffcc80, 0.9);
 
-    graphics.fillStyle(0x2e7d32, 0.95);
-    graphics.fillCircle(260, 470, 88);
-    graphics.fillCircle(220, 500, 74);
-    graphics.fillCircle(315, 510, 68);
-    graphics.fillCircle(1118, 410, 96);
-    graphics.fillCircle(1065, 448, 78);
-    graphics.fillCircle(1180, 452, 72);
-    graphics.fillCircle(1690, 420, 78);
-
-    graphics.fillStyle(accent, 0.95);
-    graphics.fillCircle(685, 585, 18);
-    graphics.fillCircle(715, 574, 16);
-    graphics.fillCircle(1430, 594, 16);
-    graphics.fillCircle(1460, 584, 18);
-
-    graphics.lineStyle(8, 0x2a1f18, 1);
-    graphics.beginPath();
-    graphics.moveTo(164, 758);
-    graphics.lineTo(218, 714);
-    graphics.lineTo(322, 714);
-    graphics.lineTo(380, 668);
-    graphics.strokePath();
-
-    const playerSpawn = this.add.circle(220, 650, 22, 0xff7043, 0.4)
-      .setStrokeStyle(5, 0xffcc80, 0.9);
-
-    this.add.text(playerSpawn.x + 40, playerSpawn.y - 6, 'Spawn', {
+    this.add.text(playerSpawn.x + 40 * s, playerSpawn.y - 6 * s, 'Spawn', {
       fontFamily: 'Arial',
-      fontSize: '20px',
+      fontSize: `${20 * s}px`,
       color: '#fff3e0'
     });
-
-    this.add.rectangle(width - 240, 420, 56, 140, 0x263238, 1)
-      .setStrokeStyle(3, 0x90a4ae, 0.7);
-
-    this.add.text(width - 240, 330, 'Exit', {
-      fontFamily: 'Arial',
-      fontSize: '24px',
-      color: '#e2e8f0'
-    }).setOrigin(0.5);
   }
 
   createCollisionMap(width, height) {
+    const s = WORLD_SCALE;
+
     this.platforms = this.physics.add.staticGroup();
 
-    this.addPlatformBody(width * 0.5, height - 85, width, 170);
-    this.addPlatformBody(315, 729, 330, 58);
-    this.addPlatformBody(665, 646, 250, 52);
-    this.addPlatformBody(1050, 775, 380, 60);
-    this.addPlatformBody(1450, 656, 260, 52);
-    this.addPlatformBody(1690, 522, 180, 44);
-    this.addPlatformBody(185, 857, 126, 106);
-    this.addPlatformBody(801, 866, 154, 88);
-    this.addPlatformBody(1594, 835, 188, 150);
+    this.addPlatformBody(width * 0.5, height - 85 * s, width, 170 * s);
+    this.addPlatformBody(315 * s, 729 * s, 330 * s, 58 * s);
+    this.addPlatformBody(540 * s, 634 * s, 220 * s, 48 * s);
+    this.addPlatformBody(785 * s, 557 * s, 210 * s, 44 * s);
+    this.addPlatformBody(1050 * s, 485 * s, 230 * s, 46 * s);
+    this.addPlatformBody(1325 * s, 414 * s, 210 * s, 44 * s);
+    this.addPlatformBody(1590 * s, 355 * s, 200 * s, 42 * s);
+    this.addPlatformBody(1810 * s, 290 * s, 170 * s, 40 * s);
+    this.addPlatformBody(1130 * s, 758 * s, 300 * s, 56 * s);
+    this.addPlatformBody(1450 * s, 643 * s, 220 * s, 46 * s);
+    this.addPlatformBody(1695 * s, 540 * s, 170 * s, 40 * s);
+    this.addPlatformBody(405 * s, 475 * s, 150 * s, 40 * s);
+    this.addPlatformBody(590 * s, 378 * s, 140 * s, 36 * s);
+    this.addPlatformBody(785 * s, 297 * s, 130 * s, 34 * s);
+    this.addPlatformBody(185 * s, 857 * s, 126 * s, 106 * s);
+    this.addPlatformBody(801 * s, 866 * s, 154 * s, 88 * s);
+    this.addPlatformBody(1534 * s, 844 * s, 188 * s, 132 * s);
+    this.addPlatformBody(1789 * s, 651 * s, 94 * s, 82 * s);
+    this.addPlatformBody(607 * s, 306 * s, 62 * s, 68 * s);
   }
 
   addPlatformBody(x, y, width, height) {
@@ -184,19 +178,63 @@ export class MainScene extends Phaser.Scene {
   }
 
   createCharacter() {
-    this.character = new Character(this, 220, 650);
+    this.character = new Character(this, 220 * WORLD_SCALE, 650 * WORLD_SCALE);
     this.character.setDepth(2);
     this.physics.add.collider(this.character, this.platforms);
   }
 
+  createDebugZoomControls(viewWidth) {
+    const zoomLabel = this.add.text(viewWidth - 210, 42, 'Zoom', {
+      fontFamily: 'Arial',
+      fontSize: '20px',
+      color: '#e2e8f0'
+    }).setScrollFactor(0);
+
+    const zoomOutButton = this.createDebugButton(viewWidth - 240, 86, '-', () => {
+      const nextZoom = Phaser.Math.Clamp(this.cameras.main.zoom - 0.1, 0.4, 2.5);
+      this.cameras.main.setZoom(nextZoom);
+    });
+
+    const zoomInButton = this.createDebugButton(viewWidth - 120, 86, '+', () => {
+      const nextZoom = Phaser.Math.Clamp(this.cameras.main.zoom + 0.1, 0.4, 2.5);
+      this.cameras.main.setZoom(nextZoom);
+    });
+
+    zoomLabel.setDepth(10);
+    zoomOutButton.label.setDepth(11);
+    zoomInButton.label.setDepth(11);
+  }
+
+  createDebugButton(x, y, label, onClick) {
+    const button = this.add.rectangle(x, y, 88, 52, 0x334155, 0.95)
+      .setStrokeStyle(2, 0x94a3b8, 0.7)
+      .setInteractive({ useHandCursor: true })
+      .setScrollFactor(0);
+
+    const text = this.add.text(x, y, label, {
+      fontFamily: 'Arial',
+      fontSize: '28px',
+      color: '#f8fafc'
+    }).setOrigin(0.5).setScrollFactor(0);
+
+    button
+      .on('pointerover', () => button.setFillStyle(0x475569, 0.98))
+      .on('pointerout', () => button.setFillStyle(0x334155, 0.95))
+      .on('pointerdown', onClick);
+
+    return { button, label: text };
+  }
+
   drawPlatform(graphics, x, y, width, height, soilColor, grassColor) {
+    const s = WORLD_SCALE;
+
     graphics.fillStyle(soilColor, 1);
-    graphics.fillRoundedRect(x, y, width, height, 18);
+    graphics.fillRoundedRect(x, y, width, height, 18 * s);
 
     graphics.fillStyle(grassColor, 1);
-    graphics.fillRoundedRect(x, y - 10, width, 24, 12);
+    graphics.fillRoundedRect(x, y - 10 * s, width, 24 * s, 12 * s);
 
     graphics.fillStyle(0x000000, 0.08);
-    graphics.fillRoundedRect(x + 14, y + 18, width - 28, height - 30, 14);
+    graphics.fillRoundedRect(x + 14 * s, y + 18 * s, width - 28 * s, height - 30 * s, 14 * s);
   }
 }

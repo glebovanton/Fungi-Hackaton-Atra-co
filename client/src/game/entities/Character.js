@@ -17,8 +17,10 @@ export class Character extends Phaser.Physics.Arcade.Sprite {
     this.setSize(42, 88);
     this.setOffset(11, 8);
 
-    this.moveSpeed = 320;
-    this.jumpSpeed = 760;
+    this.moveSpeed = 400;
+    this.jumpSpeed = 800;
+    this.maxJumps = 2;
+    this.jumpCount = 0;
     this.cursors = scene.input.keyboard.addKeys({
       up: Phaser.Input.Keyboard.KeyCodes.W,
       left: Phaser.Input.Keyboard.KeyCodes.A,
@@ -55,6 +57,11 @@ export class Character extends Phaser.Physics.Arcade.Sprite {
     const leftPressed = this.cursors.left.isDown;
     const rightPressed = this.cursors.right.isDown;
     const jumpPressed = Phaser.Input.Keyboard.JustDown(this.cursors.up) || Phaser.Input.Keyboard.JustDown(this.cursors.space);
+    const isGrounded = this.body.blocked.down || this.body.touching.down;
+
+    if (isGrounded) {
+      this.jumpCount = 0;
+    }
 
     if (leftPressed && !rightPressed) {
       this.setVelocityX(-this.moveSpeed);
@@ -66,8 +73,9 @@ export class Character extends Phaser.Physics.Arcade.Sprite {
       this.setVelocityX(0);
     }
 
-    if (jumpPressed && this.body.blocked.down) {
+    if (jumpPressed && this.jumpCount < this.maxJumps) {
       this.setVelocityY(-this.jumpSpeed);
+      this.jumpCount += 1;
     }
   }
 }
