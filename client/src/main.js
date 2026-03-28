@@ -9,7 +9,10 @@ bootGame('app');
 
 //* SOCKET *//
 
-const socket = io();
+const SOCKET_URL = import.meta.env.F_SOCKET_URL || window.location.origin;
+const socket = io(SOCKET_URL, {
+    transports: ['websocket', 'polling']
+});
 let players = unit_manager.info.players;
 
 socket.on('connect', () => { unit_manager.my_id = socket.id; });
